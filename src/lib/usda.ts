@@ -1,6 +1,12 @@
 import { supabase } from './supabase';
 
-const USDA_API_KEY = process.env.USDA_API_KEY!;
+const USDA_API_KEY = process.env.USDA_API_KEY;
+
+if (!USDA_API_KEY) {
+    throw new Error(
+        'USDA_API_KEY eksik. Lütfen .env.local dosyanıza veya Vercel proje ayarlarınıza USDA_API_KEY ekleyin.'
+    );
+}
 const USDA_BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
 
 interface UsdaFoodNutrient {
