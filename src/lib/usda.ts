@@ -1,12 +1,6 @@
 import { supabase } from './supabase';
 
-const USDA_API_KEY = process.env.USDA_API_KEY;
-
-if (!USDA_API_KEY) {
-    throw new Error(
-        'USDA_API_KEY eksik. Lütfen .env.local dosyanıza veya Vercel proje ayarlarınıza USDA_API_KEY ekleyin.'
-    );
-}
+const USDA_API_KEY = process.env.USDA_API_KEY || '';
 const USDA_BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
 
 interface UsdaFoodNutrient {
@@ -37,6 +31,7 @@ export async function searchUSDA(query: string): Promise<{
     carbs: number;
     fat: number;
 }[]> {
+    if (!USDA_API_KEY) return [];
     try {
         const response = await fetch(
             `${USDA_BASE_URL}/foods/search?api_key=${USDA_API_KEY}&query=${encodeURIComponent(query)}&pageSize=10&dataType=Foundation,SR Legacy`,

@@ -3,7 +3,7 @@ import { generateWeeklyPlan } from '@/lib/plan-generator';
 
 export async function POST(request: NextRequest) {
     try {
-        const { targetCalories, glutenFree } = await request.json();
+        const { targetCalories, glutenFree, forbiddenFoods, mealCount } = await request.json();
 
         if (!targetCalories || targetCalories < 800 || targetCalories > 6000) {
             return NextResponse.json(
@@ -12,8 +12,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const validMealCount = [3, 4, 5].includes(mealCount) ? mealCount : 4;
+
         // Utilize the improved generator logic
-        const result = await generateWeeklyPlan(targetCalories, glutenFree);
+        const result = await generateWeeklyPlan(
+            targetCalories,
+            glutenFree,
+            forbiddenFoods || [],
+            validMealCount
+        );
 
         return NextResponse.json(result);
     } catch (err: any) {

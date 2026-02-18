@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { searchAndSaveFromUSDA } from '@/lib/usda';
 
 export async function POST(request: NextRequest) {
     try {
-        const { query } = await request.json();
+        const { query, listAll } = await request.json();
+
+        // List all foods mode (for dropdown)
+        if (listAll) {
+            const { data: foods, error } = await supabase
+                .from('foods')
+                .select('*')
+                .not('meal_types', 'eq', '{}')
+                .order('name');
+
+            if (error) {
+                return NextResponse.json({ error: 'Veritabanı hatası.' }, { status: 500 });
+            }
+
+            return NextResponse.json({ foods: foods || [], source: 'database' });
+        }
 
         if (!query || query.trim().length < 2) {
             return NextResponse.json(
@@ -13,34 +27,33 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // 1. Önce veritabanında ara
-        const { data: dbFoods, error: dbError } = await supabase
+        const searchTerm = query.trim();
+
+        // 1. Search by name
+        const { data: nameResults, error: nameError } = await supabase
             .from('foods')
             .select('*')
-            .ilike('name', `%${query}%`)
+            .ilike('name', `%${searchTerm}%`)
             .limit(20);
 
-        if (dbError) {
+        // 2. Search by search_hint
+        const { data: hintResults, error: hintError } = await supabase
+            .from('foods')
+            .select('*')
+            .ilike('search_hint', `%${searchTerm}%`)
+            .limit(20);
+
+        if (nameError && hintError) {
             return NextResponse.json({ error: 'Veritabanı hatası.' }, { status: 500 });
         }
 
-        // Yeterli sonuç varsa döndür
-        if (dbFoods && dbFoods.length >= 3) {
-            return NextResponse.json({ foods: dbFoods, source: 'database' });
-        }
-
-        // 2. Yetersizse USDA API'den getir
-        const usdaFoods = await searchAndSaveFromUSDA(query);
-
-        // DB sonuçlarını ve USDA sonuçlarını birleştir
-        const allFoods = [...(dbFoods || []), ...usdaFoods];
-
-        // Tekrarlananları kaldır
-        const uniqueFoods = allFoods.filter(
+        // Merge and deduplicate
+        const allResults = [...(nameResults || []), ...(hintResults || [])];
+        const uniqueFoods = allResults.filter(
             (food, index, self) => index === self.findIndex((f) => f.id === food.id)
         );
 
-        return NextResponse.json({ foods: uniqueFoods, source: 'combined' });
+        return NextResponse.json({ foods: uniqueFoods, source: 'database' });
     } catch {
         return NextResponse.json(
             { error: 'Yiyecek arama sırasında bir hata oluştu.' },

@@ -264,7 +264,11 @@ export default function PlanPage() {
                                 }}
                             >
                                 Hedef: {plan.target_calories} kcal/gün
+                                {plan.meal_count && ` • ${plan.meal_count} Öğün`}
                                 {plan.gluten_free_only && ' • 🌾 Glütensiz'}
+                                {plan.forbidden_foods && plan.forbidden_foods.length > 0 && (
+                                    <> • 🚫 {plan.forbidden_foods.join(', ')}</>
+                                )}
                             </p>
                         </div>
                     </div>

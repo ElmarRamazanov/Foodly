@@ -1,3 +1,8 @@
+export interface FoodIngredient {
+    name: string;
+    amount: string;
+}
+
 export interface Food {
     id: string;
     name: string;
@@ -8,6 +13,12 @@ export interface Food {
     gluten_free: boolean;
     category: string;
     created_at: string;
+    meal_types: string[];
+    tags: string[];
+    allergens: string[];
+    portion_grams: number;
+    search_hint: string;
+    ingredients: FoodIngredient[];
 }
 
 export interface MealFood {
@@ -48,6 +59,8 @@ export interface WeeklyPlan {
     gluten_free_only: boolean;
     created_at: string;
     plan_days?: PlanDay[];
+    forbidden_foods?: string[];
+    meal_count?: number;
 }
 
 export const MEAL_TYPES = {
@@ -74,12 +87,45 @@ export const MEAL_CALORIE_RATIOS = {
     snack: 0.15,
 } as const;
 
-// Yiyecek kategorilerine göre öğün eşleştirme
+/**
+ * Dynamic calorie ratio configs based on meal count.
+ * 3 meals: no snack
+ * 4 meals: standard (breakfast + lunch + dinner + snack)
+ * 5 meals: breakfast + morning snack + lunch + afternoon snack + dinner
+ */
+export function getMealConfigForCount(mealCount: number): { type: string; ratio: number }[] {
+    switch (mealCount) {
+        case 3:
+            return [
+                { type: 'breakfast', ratio: 0.30 },
+                { type: 'lunch', ratio: 0.35 },
+                { type: 'dinner', ratio: 0.35 },
+            ];
+        case 5:
+            return [
+                { type: 'breakfast', ratio: 0.22 },
+                { type: 'snack', ratio: 0.10 },
+                { type: 'lunch', ratio: 0.28 },
+                { type: 'snack', ratio: 0.12 },
+                { type: 'dinner', ratio: 0.28 },
+            ];
+        case 4:
+        default:
+            return [
+                { type: 'breakfast', ratio: 0.25 },
+                { type: 'lunch', ratio: 0.30 },
+                { type: 'dinner', ratio: 0.30 },
+                { type: 'snack', ratio: 0.15 },
+            ];
+    }
+}
+
+// Yiyecek öğün türü eşleştirme (artık DB'deki meal_types sütunu kullanılıyor)
 export const MEAL_CATEGORY_MAP: Record<string, string[]> = {
     breakfast: ['breakfast', 'snack'],
-    lunch: ['main', 'breakfast'],
-    dinner: ['main'],
-    snack: ['snack'],
+    lunch: ['lunch', 'dinner'],
+    dinner: ['dinner', 'lunch'],
+    snack: ['snack', 'breakfast'],
 };
 
 export function calculateNutrition(food: Food, grams: number) {

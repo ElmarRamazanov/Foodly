@@ -6,9 +6,31 @@ import { useRouter } from 'next/navigation';
 export default function HomePage() {
   const [calories, setCalories] = useState(2000);
   const [glutenFree, setGlutenFree] = useState(false);
+  const [mealCount, setMealCount] = useState(4);
+  const [forbiddenFoods, setForbiddenFoods] = useState<string[]>([]);
+  const [forbiddenInput, setForbiddenInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+
+  const handleAddForbidden = () => {
+    const trimmed = forbiddenInput.trim();
+    if (trimmed && !forbiddenFoods.includes(trimmed.toLowerCase())) {
+      setForbiddenFoods([...forbiddenFoods, trimmed.toLowerCase()]);
+      setForbiddenInput('');
+    }
+  };
+
+  const handleRemoveForbidden = (item: string) => {
+    setForbiddenFoods(forbiddenFoods.filter((f) => f !== item));
+  };
+
+  const handleForbiddenKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddForbidden();
+    }
+  };
 
   const handleGenerate = async () => {
     if (calories < 800 || calories > 6000) {
@@ -26,6 +48,8 @@ export default function HomePage() {
         body: JSON.stringify({
           targetCalories: calories,
           glutenFree,
+          forbiddenFoods,
+          mealCount,
         }),
       });
 
@@ -195,7 +219,7 @@ export default function HomePage() {
         </div>
 
         {/* Glütensiz toggle */}
-        <div style={{ marginBottom: 32 }}>
+        <div style={{ marginBottom: 20 }}>
           <div
             className="toggle-container"
             onClick={() => setGlutenFree(!glutenFree)}
@@ -220,6 +244,159 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Öğün sayısı seçimi */}
+        <div style={{ marginBottom: 20 }}>
+          <label
+            style={{
+              display: 'block',
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--text-secondary)',
+              marginBottom: 8,
+            }}
+          >
+            🍽️ Günlük Öğün Sayısı
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[3, 4, 5].map((count) => (
+              <button
+                key={count}
+                onClick={() => setMealCount(count)}
+                style={{
+                  flex: 1,
+                  padding: '12px 8px',
+                  borderRadius: 12,
+                  border:
+                    mealCount === count
+                      ? '2px solid var(--accent)'
+                      : '1px solid var(--border)',
+                  background:
+                    mealCount === count
+                      ? 'var(--accent-glow)'
+                      : 'var(--bg-secondary)',
+                  color:
+                    mealCount === count
+                      ? 'var(--accent-light)'
+                      : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  transition: 'all 0.2s',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ fontSize: 20, marginBottom: 2 }}>
+                  {count === 3 ? '🥗' : count === 4 ? '🍱' : '🍴'}
+                </div>
+                {count} Öğün
+                <div style={{ fontSize: 10, fontWeight: 400, marginTop: 2, color: 'var(--text-muted)' }}>
+                  {count === 3
+                    ? 'Kahvaltı · Öğle · Akşam'
+                    : count === 4
+                    ? 'Kahvaltı · Öğle · Akşam · Ara'
+                    : 'Kahvaltı · Ara · Öğle · Ara · Akşam'}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Yiyemedikleri yemekler */}
+        <div style={{ marginBottom: 32 }}>
+          <label
+            style={{
+              display: 'block',
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--text-secondary)',
+              marginBottom: 8,
+            }}
+          >
+            🚫 Yiyemediğiniz Yiyecekler
+          </label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              className="input-field"
+              value={forbiddenInput}
+              onChange={(e) => setForbiddenInput(e.target.value)}
+              onKeyDown={handleForbiddenKeyDown}
+              placeholder="Ör: Yumurta, Süt, Balık..."
+              style={{
+                fontSize: 14,
+                padding: '12px 80px 12px 16px',
+              }}
+            />
+            <button
+              onClick={handleAddForbidden}
+              style={{
+                position: 'absolute',
+                right: 6,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: forbiddenInput.trim() ? 'var(--accent)' : 'var(--bg-card)',
+                border: 'none',
+                color: forbiddenInput.trim() ? 'white' : 'var(--text-muted)',
+                padding: '6px 14px',
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: forbiddenInput.trim() ? 'pointer' : 'default',
+                transition: 'all 0.2s',
+              }}
+            >
+              Ekle
+            </button>
+          </div>
+          {forbiddenFoods.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                gap: 6,
+                flexWrap: 'wrap',
+                marginTop: 10,
+              }}
+            >
+              {forbiddenFoods.map((food) => (
+                <span
+                  key={food}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    color: 'var(--danger-light)',
+                    padding: '4px 10px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 500,
+                  }}
+                >
+                  {food}
+                  <button
+                    onClick={() => handleRemoveForbidden(food)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--danger-light)',
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      padding: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+            Bu yiyecekleri içeren tarifler plan dışında bırakılır
+          </p>
         </div>
 
         {/* Hata mesajı */}
@@ -284,7 +461,7 @@ export default function HomePage() {
         }}
       >
         <span>📊 7 Gün</span>
-        <span>🍽️ 4 Öğün / Gün</span>
+        <span>🍽️ {mealCount} Öğün / Gün</span>
         <span>⚡ Anlık Kalori Hesaplama</span>
       </div>
     </div>
