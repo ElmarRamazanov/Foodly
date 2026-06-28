@@ -5,3 +5,5 @@ A responsive web application that generates weekly meal plans based on daily cal
 The project was built with the assistance of AI tools to speed up development, while the overall logic, structure, and validation were guided by the developer.
 
 Currently a personal-use MVP, with potential to evolve into a full SaaS application.
+
+Live Demo: https://foodly-theta.vercel.app/
